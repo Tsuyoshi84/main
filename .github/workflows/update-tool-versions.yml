@@ -69,7 +69,7 @@ jobs:
               exit 1
             fi
 
-            git add .tool-versions
+            git add .tool-versions package.json
             git commit -m "Update Node.js to $NEW_NODE_VERSION, pnpm to $NEW_PNPM_VERSION"
 
             git push origin $BRANCH_NAME
