@@ -1,4 +1,4 @@
-name: Update .tool-versions
+name: Update Node.js & pnpm
 
 on:
   workflow_dispatch:
@@ -6,11 +6,11 @@ on:
       node_version:
         description: "Node.js version to update to"
         required: true
-        default: "20.18.0"
+        default: "20.xx.xx"
       pnpm_version:
         description: "pnpm version to update to"
         required: true
-        default: "9.12.1"
+        default: "9.xx.x"
 
 jobs:
   update-tool-versions:
@@ -33,7 +33,7 @@ jobs:
           NEW_PNPM_VERSION: ${{ github.event.inputs.pnpm_version }}
         run: |
           set -e
-          REPOS=("Tsuyoshi84/sub1" "Tsuyoshi84/sub2")
+          REPOS=("yourusername/main-service" "yourusername/admin-service" "yourusername/manager-service")
           BRANCH_NAME="update-tool-versions-$(date +%Y%m%d%H%M%S)"
 
           for REPO in "${REPOS[@]}"; do
@@ -42,6 +42,13 @@ jobs:
             REPO_NAME=$(basename $REPO)
             cd $REPO_NAME
 
+            # Ensure we're on the main branch
+            git checkout main
+
+            # Pull the latest changes from the remote main branch
+            git pull origin main
+
+            # Create a new branch from the updated main branch
             git checkout -b $BRANCH_NAME
 
             # Update .tool-versions
@@ -54,13 +61,13 @@ jobs:
             fi
 
             git add .tool-versions
-            git commit -m "Update .tool-versions to Node.js $NEW_NODE_VERSION and pnpm $NEW_PNPM_VERSION"
+            git commit -m "Update Node.js to $NEW_NODE_VERSION, pnpm to $NEW_PNPM_VERSION"
 
             git push origin $BRANCH_NAME
 
-            # Create PR
+            # Create PR using GH_TOKEN for authentication
             gh pr create \
-              --title "Update .tool-versions to Node.js $NEW_NODE_VERSION and pnpm $NEW_PNPM_VERSION" \
+              --title "chore: Update Node.js to $NEW_NODE_VERSION, pnpm to $NEW_PNPM_VERSION" \
               --body "Automatic update of .tool-versions" \
               --head $BRANCH_NAME \
               --base main \
