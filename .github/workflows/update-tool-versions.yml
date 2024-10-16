@@ -51,6 +51,15 @@ jobs:
             # Create a new branch from the updated main branch
             git checkout -b $BRANCH_NAME
 
+            # Extract previous versions from .tool-versions
+            if [ -f ".tool-versions" ]; then
+              PREVIOUS_NODE_VERSION=$(grep '^nodejs ' .tool-versions | awk '{print $2}')
+              PREVIOUS_PNPM_VERSION=$(grep '^pnpm ' .tool-versions | awk '{print $2}')
+            else
+              echo "Error: .tool-versions file not found in $REPO"
+              exit 1
+            fi
+
             # Update .tool-versions
             if [ -f ".tool-versions" ]; then
               echo "Updating .tool-versions"
@@ -85,10 +94,12 @@ jobs:
 
             git push origin $BRANCH_NAME
 
+            PR_BODY=$(printf "Update versions\n- Node.js: %s -> %s\n- pnpm: %s -> %s" "$PREVIOUS_NODE_VERSION" "$NEW_NODE_VERSION" "$PREVIOUS_PNPM_VERSION" "$NEW_PNPM_VERSION")
+
             # Create PR using GH_TOKEN for authentication
             gh pr create \
               --title "chore: Update Node.js to $NEW_NODE_VERSION, pnpm to $NEW_PNPM_VERSION" \
-              --body "Automatic update of .tool-versions" \
+              --body "$PR_BODY" \
               --head $BRANCH_NAME \
               --base main \
               --repo $REPO
