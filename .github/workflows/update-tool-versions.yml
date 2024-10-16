@@ -38,15 +38,15 @@ jobs:
 
           for REPO in "${REPOS[@]}"; do
             echo "Processing $REPO"
-            git clone https://$GH_TOKEN@github.com/$REPO.git
+            REPO_URL="https://$GH_TOKEN@github.com/$REPO.git"
+
+            # Get the default branch name without cloning
+            DEFAULT_BRANCH=$(curl -s -H "Authorization: token $GH_TOKEN" https://api.github.com/repos/$REPO | jq -r .default_branch)
+
+            # Shallow clone the default branch only
+            git clone --depth 1 --branch $DEFAULT_BRANCH $REPO_URL
             REPO_NAME=$(basename $REPO)
             cd $REPO_NAME
-
-            # Ensure we're on the main branch
-            git checkout main
-
-            # Pull the latest changes from the remote main branch
-            git pull origin main
 
             # Create a new branch from the updated main branch
             git checkout -b $BRANCH_NAME
