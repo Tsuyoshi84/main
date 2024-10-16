@@ -60,6 +60,18 @@ jobs:
               exit 1
             fi
 
+            # Determine which versions have changed
+            NODE_UPDATED=false
+            PNPM_UPDATED=false
+
+            if [ "$PREVIOUS_NODE_VERSION" != "$NEW_NODE_VERSION" ]; then
+              NODE_UPDATED=true
+            fi
+
+            if [ "$PREVIOUS_PNPM_VERSION" != "$NEW_PNPM_VERSION" ]; then
+              PNPM_UPDATED=true
+            fi
+
             # Update .tool-versions
             if [ -f ".tool-versions" ]; then
               echo "Updating .tool-versions"
@@ -89,16 +101,56 @@ jobs:
               echo "Warning: Dockerfile not found in $REPO. Skipping Dockerfile update."
             fi
 
+            # Construct the commit message
+            COMMIT_MESSAGE=""
+
+            if [ "$NODE_UPDATED" = true ] && [ "$PNPM_UPDATED" = true ]; then
+              COMMIT_MESSAGE="Update Node.js to $NEW_NODE_VERSION and pnpm to $NEW_PNPM_VERSION"
+            elif [ "$NODE_UPDATED" = true ]; then
+              COMMIT_MESSAGE="Update Node.js to $NEW_NODE_VERSION"
+            elif [ "$PNPM_UPDATED" = true ]; then
+              COMMIT_MESSAGE="Update pnpm to $NEW_PNPM_VERSION"
+            fi
+
             git add .tool-versions package.json Dockerfile
-            git commit -m "Update Node.js to $NEW_NODE_VERSION, pnpm to $NEW_PNPM_VERSION"
+            git commit -m "$COMMIT_MESSAGE"
 
             git push origin $BRANCH_NAME
 
-            PR_BODY=$(printf "Update versions\n- Node.js: %s -> %s\n- pnpm: %s -> %s" "$PREVIOUS_NODE_VERSION" "$NEW_NODE_VERSION" "$PREVIOUS_PNPM_VERSION" "$NEW_PNPM_VERSION")
+            # Construct the PR title
+            PR_TITLE="chore:"
+            UPDATES=()
+
+            if [ "$NODE_UPDATED" = true ]; then
+              UPDATES+=("Update Node.js to $NEW_NODE_VERSION")
+            fi
+
+            if [ "$PNPM_UPDATED" = true ]; then
+              UPDATES+=("Update pnpm to $NEW_PNPM_VERSION")
+            fi
+
+            # Join the UPDATES array with commas
+            UPDATES_JOINED=$(IFS=', '; echo "${UPDATES[*]}")
+
+            PR_TITLE="$PR_TITLE $UPDATES_JOINED"
+
+            # Construct the PR body
+            PR_BODY="Update versions"
+
+            if [ "$NODE_UPDATED" = true ]; then
+              PR_BODY="$PR_BODY\n- Node.js: $PREVIOUS_NODE_VERSION -> $NEW_NODE_VERSION"
+            fi
+
+            if [ "$PNPM_UPDATED" = true ]; then
+              PR_BODY="$PR_BODY\n- pnpm: $PREVIOUS_PNPM_VERSION -> $NEW_PNPM_VERSION"
+            fi
+
+            # Use printf to interpret \n
+            PR_BODY=$(printf "$PR_BODY")
 
             # Create PR using GH_TOKEN for authentication
             gh pr create \
-              --title "chore: Update Node.js to $NEW_NODE_VERSION, pnpm to $NEW_PNPM_VERSION" \
+              --title "$PR_TITLE" \
               --body "$PR_BODY" \
               --head $BRANCH_NAME \
               --base main \
