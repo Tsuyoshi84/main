@@ -60,6 +60,15 @@ jobs:
               exit 1
             fi
 
+            # Update package.json
+            if [ -f "package.json" ]; then
+              # Update packageManager field using jq
+              jq '.packageManager = "pnpm@'"$NEW_PNPM_VERSION"'"' package.json > package.json.tmp && mv package.json.tmp package.json
+            else
+              echo "Error: package.json file not found in $REPO"
+              exit 1
+            fi
+
             git add .tool-versions
             git commit -m "Update Node.js to $NEW_NODE_VERSION, pnpm to $NEW_PNPM_VERSION"
 
