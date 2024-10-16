@@ -33,7 +33,7 @@ jobs:
           NEW_PNPM_VERSION: ${{ github.event.inputs.pnpm_version }}
         run: |
           set -e
-          REPOS=("yourusername/main-service" "yourusername/admin-service" "yourusername/manager-service")
+          REPOS=("Tsuyoshi84/sub1" "Tsuyoshi84/sub2")
           BRANCH_NAME="update-tool-versions-$(date +%Y%m%d%H%M%S)"
 
           for REPO in "${REPOS[@]}"; do
