@@ -26,12 +26,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gh
 
-      - name: Authenticate gh CLI
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          echo "${GH_TOKEN}" | gh auth login --with-token
-
       - name: Update repositories
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
