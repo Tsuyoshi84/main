@@ -51,6 +51,15 @@ jobs:
             # Create a new branch from the updated main branch
             git checkout -b $BRANCH_NAME
 
+            # Read previous versions
+            if [ -f ".tool-versions" ]; then
+              PREVIOUS_NODE_VERSION=$(grep '^nodejs ' .tool-versions | awk '{print $2}')
+              PREVIOUS_PNPM_VERSION=$(grep '^pnpm ' .tool-versions | awk '{print $2}')
+            else
+              echo "Error: .tool-versions file not found in $REPO"
+              exit 1
+            fi
+
             # Update .tool-versions
             if [ -f ".tool-versions" ]; then
               echo "Updating .tool-versions"
@@ -85,10 +94,35 @@ jobs:
 
             git push origin $BRANCH_NAME
 
+            # Create the detailed PR body
+            PR_BODY=$(cat <<EOF
+            # Description
+                    
+            This PR updates the Node.js and pnpm versions used in the project to the specified versions:
+
+            - **Node.js**: Updated from \`$PREVIOUS_NODE_VERSION\` to \`$NEW_NODE_VERSION\`
+            - **pnpm**: Updated from \`$PREVIOUS_PNPM_VERSION\` to \`$NEW_PNPM_VERSION\`
+
+            ### Changes Made
+
+            The following files have been updated:
+
+            1. **.tool-versions**
+               - Updated \`nodejs\` version to \`$NEW_NODE_VERSION\`
+               - Updated \`pnpm\` version to \`$NEW_PNPM_VERSION\`
+
+            2. **package.json**
+               - Updated \`packageManager\` field to \`pnpm@$NEW_PNPM_VERSION\`
+
+            3. **Dockerfile**
+               - Updated Node.js base image to \`node:$NEW_NODE_VERSION-bookworm-slim\`
+            EOF
+            )
+
             # Create PR using GH_TOKEN for authentication
             gh pr create \
               --title "chore: Update Node.js to $NEW_NODE_VERSION, pnpm to $NEW_PNPM_VERSION" \
-              --body "Automatic update of .tool-versions" \
+              --body "$PR_BODY" \
               --head $BRANCH_NAME \
               --base main \
               --repo $REPO
