@@ -1,0 +1,76 @@
+name: Update .tool-versions
+
+on:
+  workflow_dispatch:
+    inputs:
+      node_version:
+        description: "Node.js version to update to"
+        required: true
+        default: "20.18.0"
+      pnpm_version:
+        description: "pnpm version to update to"
+        required: true
+        default: "9.12.1"
+
+jobs:
+  update-tool-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Git user
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+
+      - name: Install gh CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gh
+
+      - name: Authenticate gh CLI
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          echo "${GH_TOKEN}" | gh auth login --with-token
+
+      - name: Update repositories
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          NEW_NODE_VERSION: ${{ github.event.inputs.node_version }}
+          NEW_PNPM_VERSION: ${{ github.event.inputs.pnpm_version }}
+        run: |
+          set -e
+          REPOS=("Tsuyoshi84/sub1" "Tsuyoshi84/sub2")
+          BRANCH_NAME="update-tool-versions-$(date +%Y%m%d%H%M%S)"
+
+          for REPO in "${REPOS[@]}"; do
+            echo "Processing $REPO"
+            git clone https://$GH_TOKEN@github.com/$REPO.git
+            REPO_NAME=$(basename $REPO)
+            cd $REPO_NAME
+
+            git checkout -b $BRANCH_NAME
+
+            # Update .tool-versions
+            if [ -f ".tool-versions" ]; then
+              sed -i "s/^nodejs .*/nodejs $NEW_NODE_VERSION/" .tool-versions
+              sed -i "s/^pnpm .*/pnpm $NEW_PNPM_VERSION/" .tool-versions
+            else
+              echo "Error: .tool-versions file not found in $REPO"
+              exit 1
+            fi
+
+            git add .tool-versions
+            git commit -m "Update .tool-versions to Node.js $NEW_NODE_VERSION and pnpm $NEW_PNPM_VERSION"
+
+            git push origin $BRANCH_NAME
+
+            # Create PR
+            gh pr create \
+              --title "Update .tool-versions to Node.js $NEW_NODE_VERSION and pnpm $NEW_PNPM_VERSION" \
+              --body "Automatic update of .tool-versions" \
+              --head $BRANCH_NAME \
+              --base main \
+              --repo $REPO
+
+            cd ..
+          done
