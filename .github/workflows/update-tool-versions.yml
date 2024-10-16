@@ -31,6 +31,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           NEW_NODE_VERSION: ${{ github.event.inputs.node_version }}
           NEW_PNPM_VERSION: ${{ github.event.inputs.pnpm_version }}
+          DEFAULT_BRANCH: "main"
         run: |
           set -e
           REPOS=("Tsuyoshi84/sub1" "Tsuyoshi84/sub2")
@@ -39,9 +40,6 @@ jobs:
           for REPO in "${REPOS[@]}"; do
             echo "Processing $REPO"
             REPO_URL="https://$GH_TOKEN@github.com/$REPO.git"
-
-            # Get the default branch name without cloning
-            DEFAULT_BRANCH=$(curl -s -H "Authorization: token $GH_TOKEN" https://api.github.com/repos/$REPO | jq -r .default_branch)
 
             # Shallow clone the default branch only
             git clone --depth 1 --branch $DEFAULT_BRANCH $REPO_URL
@@ -114,9 +112,7 @@ jobs:
 
             git add .tool-versions package.json Dockerfile
             git commit -m "$COMMIT_MESSAGE"
-
             git push origin $BRANCH_NAME
-
 
             # Construct the PR title by prefixing 'chore:' to the commit message
             PR_TITLE="chore: $COMMIT_MESSAGE"
@@ -140,7 +136,7 @@ jobs:
               --title "$PR_TITLE" \
               --body "$PR_BODY" \
               --head $BRANCH_NAME \
-              --base main \
+              --base $DEFAULT_BRANCH \
               --repo $REPO
 
             cd ..
