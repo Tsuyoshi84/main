@@ -117,22 +117,9 @@ jobs:
 
             git push origin $BRANCH_NAME
 
-            # Construct the PR title
-            PR_TITLE="chore:"
-            UPDATES=()
 
-            if [ "$NODE_UPDATED" = true ]; then
-              UPDATES+=("Update Node.js to $NEW_NODE_VERSION")
-            fi
-
-            if [ "$PNPM_UPDATED" = true ]; then
-              UPDATES+=("Update pnpm to $NEW_PNPM_VERSION")
-            fi
-
-            # Join the UPDATES array with commas
-            UPDATES_JOINED=$(IFS=', '; echo "${UPDATES[*]}")
-
-            PR_TITLE="$PR_TITLE $UPDATES_JOINED"
+            # Construct the PR title by prefixing 'chore:' to the commit message
+            PR_TITLE="chore: $COMMIT_MESSAGE"
 
             # Construct the PR body
             PR_BODY="Update versions"
