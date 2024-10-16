@@ -34,7 +34,7 @@ jobs:
         run: |
           set -e
           REPOS=("Tsuyoshi84/sub1" "Tsuyoshi84/sub2")
-          BRANCH_NAME="update-tool-versions-$(date +%Y%m%d%H%M%S)"
+          BRANCH_NAME="update-versions-$(date +%Y%m%d%H%M%S)"
 
           for REPO in "${REPOS[@]}"; do
             echo "Processing $REPO"
@@ -53,6 +53,7 @@ jobs:
 
             # Update .tool-versions
             if [ -f ".tool-versions" ]; then
+              echo "Updating .tool-versions"
               sed -i "s/^nodejs .*/nodejs $NEW_NODE_VERSION/" .tool-versions
               sed -i "s/^pnpm .*/pnpm $NEW_PNPM_VERSION/" .tool-versions
             else
@@ -63,13 +64,23 @@ jobs:
             # Update package.json
             if [ -f "package.json" ]; then
               # Update packageManager field using jq
+              echo "Updating package.json"
               jq '.packageManager = "pnpm@'"$NEW_PNPM_VERSION"'"' package.json > package.json.tmp && mv package.json.tmp package.json
             else
               echo "Error: package.json file not found in $REPO"
               exit 1
             fi
 
-            git add .tool-versions package.json
+            # Update Dockerfile
+            if [ -f "Dockerfile" ]; then
+              # Update the Node.js version in the Dockerfile
+              echo "Updating Dockerfile"
+              sed -i "s|^FROM node:.*-bookworm-slim AS base|FROM node:$NEW_NODE_VERSION-bookworm-slim AS base|" Dockerfile
+            else
+              echo "Warning: Dockerfile not found in $REPO. Skipping Dockerfile update."
+            fi
+
+            git add .tool-versions package.json Dockerfile
             git commit -m "Update Node.js to $NEW_NODE_VERSION, pnpm to $NEW_PNPM_VERSION"
 
             git push origin $BRANCH_NAME
