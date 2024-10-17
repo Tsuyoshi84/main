@@ -113,6 +113,7 @@ jobs:
               COMMIT_MESSAGE="Update pnpm to $NEW_PNPM_VERSION"
             fi
 
+            echo "Commit and push changes"
             git add .tool-versions package.json Dockerfile
             git commit -m "$COMMIT_MESSAGE"
             git push origin $BRANCH_NAME
