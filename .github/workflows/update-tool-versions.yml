@@ -15,6 +15,9 @@ on:
 jobs:
   update-tool-versions:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Set up Git user
         run: |
@@ -28,7 +31,7 @@ jobs:
 
       - name: Update repositories
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NEW_NODE_VERSION: ${{ github.event.inputs.node_version }}
           NEW_PNPM_VERSION: ${{ github.event.inputs.pnpm_version }}
           DEFAULT_BRANCH: "main"
